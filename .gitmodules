@@ -1,0 +1,3 @@
+[submodule "ffindex"]
+	path = ffindex
+	url = https://github.com/soedinglab/ffindex
