@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <algorithm>
+#include <iterator>
 #include <unistd.h>
 #include <cstdio>
 
