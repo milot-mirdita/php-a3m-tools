@@ -149,8 +149,8 @@ void A3mExtractor::__construct(Php::Parameters &params) {
         throw Php::Exception("Not enough parameters");
     }
 
-    headerReader = new Php::Object("IntDBReader", (const char *) params[0], (const char *) params[1]);
-    sequenceReader = new Php::Object("IntDBReader", (const char *) params[2], (const char *) params[3]);
+    headerReader = new Php::Object("IntDBReader", (const char *) params[0], (const char *) params[1], 1);
+    sequenceReader = new Php::Object("IntDBReader", (const char *) params[2], (const char *) params[3], 1);
 }
 
 void A3mExtractor::__destruct() {
