@@ -15,7 +15,11 @@ set(php_a3m_tools_source_files
         )
 
 add_library(a3mtools SHARED ${php_a3m_tools_source_files})
-target_link_libraries(a3mtools fmemopen_polyfill phpcpp)
+target_link_libraries(a3mtools phpcpp)
+if (NOT HAVE_FMEMOPEN)
+        target_link_libraries(a3mtools fmemopen_polyfil)
+endif()
+
 set_target_properties(a3mtools
         PROPERTIES
         PREFIX ""
