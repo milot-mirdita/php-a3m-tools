@@ -5,19 +5,7 @@
 
 
 #include "a3m_compress.h"
-#include <sys/mman.h>
 #include <sstream>
-
-void writeU16(std::ostream &file, uint16_t val) {
-    unsigned char bytes[2];
-
-    // extract the individual bytes from our value
-    bytes[0] = (val) & 0xFF;  // low byte
-    bytes[1] = (val >> 8) & 0xFF;  // high byte
-
-    // write those bytes to the file
-    file.write((char *) bytes, 2);
-}
 
 void readU16(const char **ptr, uint16_t &result) {
     unsigned char array[2];
@@ -30,18 +18,6 @@ void readU16(const char **ptr, uint16_t &result) {
     result = array[0] | (array[1] << 8);
 }
 
-void writeU32(std::ostream &file, uint32_t val) {
-    unsigned char bytes[4];
-
-    // extract the individual bytes from our value
-    bytes[0] = (val) & 0xFF;
-    bytes[1] = (val >> 8) & 0xFF;
-    bytes[2] = (val >> 16) & 0xFF;
-    bytes[3] = (val >> 24) & 0xFF;
-
-    // write those bytes to the file
-    file.write((char *) bytes, 4);
-}
 
 void readU32(const char **ptr, uint32_t &result) {
     unsigned char array[4];
@@ -59,8 +35,8 @@ void readU32(const char **ptr, uint32_t &result) {
 }
 
 void extract_a3m(const char *data, size_t data_size,
-                 ffindex_index_t *ffindex_sequence_database_index, char *ffindex_sequence_database_data,
-                 ffindex_index_t *ffindex_header_database_index, char *ffindex_header_database_data,
+                 Php::Object *sequenceReader,
+                 Php::Object *headerReader,
                  std::ostream &output) {
 
     //read stuff till compressed part
@@ -110,18 +86,15 @@ void extract_a3m(const char *data, size_t data_size,
         readU32(&data, entry_index);
         index += 4;
 
-        ffindex_entry_t *sequence_entry = ffindex_get_entry_by_index(ffindex_sequence_database_index, entry_index);
-        char *sequence = ffindex_get_data_by_entry(ffindex_sequence_database_data, sequence_entry);
-
-        ffindex_entry_t *header_entry = ffindex_get_entry_by_index(ffindex_header_database_index, entry_index);
-        char *header = ffindex_get_data_by_entry(ffindex_header_database_data, header_entry);
+        std::string sequence = sequenceReader->call("getData", static_cast<int64_t>(entry_index));
+        std::string header = headerReader->call("getData", static_cast<int64_t>(entry_index));
 
         // make sure we always have a valid fasta prefix
         if (header[0] != '>') {
             output.put('>');
         }
 
-        output.write(header, header_entry->length - 1);
+        output.write(header.c_str(), header.length() - 1);
         output.put('\n');
 
         readU16(&data, start_pos);
@@ -176,84 +149,13 @@ void A3mExtractor::__construct(Php::Parameters &params) {
         throw Php::Exception("Not enough parameters");
     }
 
-    std::string sequenceDataFile = (const char *) params[0];
-    std::string sequenceIndexFile = (const char *) params[1];
-    std::string headerDataFile = (const char *) params[2];
-    std::string headerIndexFile = (const char *) params[3];
-
-    sequenceDataHandle = fopen(sequenceDataFile.c_str(), "r");
-    if (sequenceDataHandle == NULL) {
-        std::ostringstream message;
-        message << "ERROR: Could not open ffindex sequence data file! (" << sequenceDataFile.c_str() << ")!";
-        throw Php::Exception(message.str());
-    }
-
-    sequenceIndexHandle = fopen(sequenceIndexFile.c_str(), "r");
-    if (sequenceIndexHandle == NULL) {
-        std::ostringstream message;
-        message << "ERROR: Could not open ffindex sequence index file! (" << sequenceIndexFile.c_str() << ")!";
-        throw Php::Exception(message.str());
-    }
-
-    sequenceData = ffindex_mmap_data(sequenceDataHandle, &sequenceSize);
-    size_t entries = ffcount_lines(sequenceIndexFile.c_str());
-    sequenceIndex = ffindex_index_parse(sequenceIndexHandle, entries);
-    if (sequenceIndex == NULL) {
-        throw Php::Exception("ERROR: Sequence index could not be loaded!");
-    }
-
-    //prepare ffindex header database
-    headerDataHandle = fopen(headerDataFile.c_str(), "r");
-    if (headerDataHandle == NULL) {
-        std::ostringstream message;
-        message << "ERROR: Could not open ffindex header data file! (" << headerDataFile.c_str() << ")!";
-        throw Php::Exception(message.str());
-    }
-
-    headerIndexHandle = fopen(headerIndexFile.c_str(), "r");
-    if (headerIndexHandle == NULL) {
-        std::ostringstream message;
-        message << "ERROR: Could not open ffindex header index file! (" << headerIndexFile.c_str() << ")!";
-        throw Php::Exception(message.str());
-    }
-
-    headerData = ffindex_mmap_data(headerDataHandle, &headerSize);
-    entries = ffcount_lines(headerIndexFile.c_str());
-    headerIndex = ffindex_index_parse(headerIndexHandle, entries);
-
-    if (headerIndex == NULL) {
-        std::ostringstream message;
-        message << "Header index could not be loaded!";
-        throw Php::Exception(message.str());
-    }
+    headerReader = new Php::Object("IntDBReader", (const char *) params[0], (const char *) params[1]);
+    sequenceReader = new Php::Object("IntDBReader", (const char *) params[2], (const char *) params[3]);
 }
 
 void A3mExtractor::__destruct() {
-    munmap(sequenceIndex->index_data, sequenceIndex->index_data_size);
-    free(sequenceIndex);
-
-    munmap(sequenceData, sequenceSize);
-
-    if (sequenceIndexHandle) {
-        fclose(sequenceIndexHandle);
-    }
-
-    if (sequenceDataHandle) {
-        fclose(sequenceDataHandle);
-    }
-
-    munmap(headerIndex->index_data, headerIndex->index_data_size);
-    free(headerIndex);
-
-    munmap(headerData, headerSize);
-
-    if (headerIndexHandle) {
-        fclose(headerIndexHandle);
-    }
-
-    if (headerDataHandle) {
-        fclose(headerDataHandle);
-    }
+    delete headerReader;
+    delete sequenceReader;
 }
 
 Php::Value A3mExtractor::readCompressedA3M(Php::Parameters &params) {
@@ -263,7 +165,7 @@ Php::Value A3mExtractor::readCompressedA3M(Php::Parameters &params) {
 
     std::ostringstream ss;
     std::string ca3m = (const char *) params[0];
-    extract_a3m(ca3m.c_str(), ca3m.length(), sequenceIndex, sequenceData, headerIndex, headerData, ss);
+    extract_a3m(ca3m.c_str(), ca3m.length(), sequenceReader, headerReader, ss);
     std::string a3m = ss.str();
 
     return a3m;

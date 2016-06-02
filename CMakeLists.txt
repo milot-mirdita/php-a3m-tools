@@ -4,16 +4,13 @@ project(php_a3m_extractor)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
-include_directories(ffindex/src)
-add_subdirectory(ffindex EXCLUDE_FROM_ALL)
-
 set(php_a3m_extractor_source_files
         a3m_compress.h
         a3m_compress.cpp
         main.cpp)
 
 add_library(a3mextractor SHARED ${php_a3m_extractor_source_files})
-target_link_libraries(a3mextractor phpcpp ffindex)
+target_link_libraries(a3mextractor phpcpp)
 set_target_properties(a3mextractor
         PROPERTIES
         PREFIX ""
