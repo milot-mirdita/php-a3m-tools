@@ -1,4 +1,5 @@
-#include "a3m_compress.h"
+#include "a3m_extractor.h"
+#include "a3m_reader.h"
 
 extern "C" {
     
@@ -11,7 +12,7 @@ extern "C" {
      */
     PHPCPP_EXPORT void *get_module() 
     {
-        static Php::Extension extension("A3mExtractor", "0.1");
+        static Php::Extension extension("A3mTools", "0.1");
 
         Php::Class<A3mExtractor> extractor("A3mExtractor");
         extractor.method("__construct", &A3mExtractor::__construct);
@@ -19,6 +20,12 @@ extern "C" {
         extractor.method("readCompressedA3M", &A3mExtractor::readCompressedA3M);
 
         extension.add(std::move(extractor));
+
+        Php::Class<A3mReader> reader("A3mReader");
+        reader.method("__construct", &A3mReader::__construct);
+        reader.method("getFasta", &A3mReader::getFasta);
+
+        extension.add(std::move(reader));
 
         return extension;
     }

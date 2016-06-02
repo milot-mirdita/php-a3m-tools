@@ -4,7 +4,7 @@
  */
 
 
-#include "a3m_compress.h"
+#include "a3m_extractor.h"
 #include <sstream>
 
 void readU16(const char **ptr, uint16_t &result) {
@@ -86,8 +86,9 @@ void extract_a3m(const char *data, size_t data_size,
         readU32(&data, entry_index);
         index += 4;
 
-        std::string sequence = sequenceReader->call("getData", static_cast<int64_t>(entry_index));
-        std::string header = headerReader->call("getData", static_cast<int64_t>(entry_index));
+        int64_t entry_id = sequenceReader->call("getId", static_cast<int64_t>(entry_index));
+        std::string sequence = sequenceReader->call("getData", entry_id);
+        std::string header = headerReader->call("getData", entry_id);
 
         // make sure we always have a valid fasta prefix
         if (header[0] != '>') {
