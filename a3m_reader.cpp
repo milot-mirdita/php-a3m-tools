@@ -159,7 +159,7 @@ std::string a3mtofasta(std::string a3m) {
                 if (entry[i] == '.') {
                     ss << '-';
                 } else {
-                    ss << entry[i];
+                    ss << static_cast<char>(toupper(entry[i]));
                 }
             }
         }
