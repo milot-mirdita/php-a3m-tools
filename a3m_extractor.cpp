@@ -86,8 +86,8 @@ void extract_a3m(const char *data, size_t data_size,
         readU32(&data, entry_index);
         index += 4;
 
-        std::string sequence = sequenceReader->call("getData", entry_index);
-        std::string header = headerReader->call("getData", entry_index);
+        std::string sequence = sequenceReader->call("getData", static_cast<int64_t>(entry_index));
+        std::string header = headerReader->call("getData", static_cast<int64_t>(entry_index));
 
         // make sure we always have a valid fasta prefix
         if (header[0] != '>') {
