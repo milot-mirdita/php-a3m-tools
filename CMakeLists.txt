@@ -4,8 +4,6 @@ project(php_a3m_tools)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
-add_subdirectory(fmemopen)
-
 set(php_a3m_tools_source_files
         a3m_extractor.h
         a3m_extractor.cpp
@@ -15,7 +13,7 @@ set(php_a3m_tools_source_files
         )
 
 add_library(a3mtools SHARED ${php_a3m_tools_source_files})
-target_link_libraries(a3mtools fmemopen_polyfill phpcpp)
+target_link_libraries(a3mtools phpcpp)
 set_target_properties(a3mtools
         PROPERTIES
         PREFIX ""

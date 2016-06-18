@@ -1,6 +1,10 @@
 #include "a3m_extractor.h"
 #include "a3m_reader.h"
 
+Php::Value phpA3mToFasta(Php::Parameters &parameters) {
+    return static_cast<std::string>(a3mtofasta(parameters[0]));
+}
+
 extern "C" {
     
     /**
@@ -21,11 +25,7 @@ extern "C" {
 
         extension.add(std::move(extractor));
 
-        Php::Class<A3mReader> reader("A3mReader");
-        reader.method("__construct", &A3mReader::__construct);
-        reader.method("getFasta", &A3mReader::getFasta);
-
-        extension.add(std::move(reader));
+        extension.add("a3mtofasta", phpA3mToFasta);
 
         return extension;
     }
